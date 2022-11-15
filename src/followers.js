@@ -6,7 +6,7 @@ async function run()
 
     localStorage.setItem('total_followers', (await getFollowers()).total);
 
-    setInterval(() => {
+    setInterval(async function() {
         const followers = await getFollowers();
         if (localStorage.getItem('total_followers') < followers.total) {
             const newFollowers = followers.total - localStorage.getItem('total_followers');
@@ -20,10 +20,12 @@ async function run()
 
 async function getFollowers()
 {
-    return await fetch(`https://api.twitch.tv/helix/users/follows?to_id=${USER.id}&first=100`,
+    const user = await getUser();
+    const token = await getAppToken();
+    return await fetch(`${process.env.MIX_API_URI}/users/follows?to_id=${user.id}&first=100`,
         {
             headers: {
-                Authorization: `Bearer ${getAppToken()}`,
+                Authorization: `Bearer ${token}`,
                 "Client-ID": process.env.MIX_CLIENT_ID,
             },
         }

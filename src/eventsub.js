@@ -1,26 +1,10 @@
 import { getUserToken, setScopes, getUser } from "./auth";
 
-const TOPICS = [
-    'channel-bits-events-v2.<USER_ID>',
-    'channel-points-channel-v1.<USER_ID>',
-    'channel-subscribe-events-v1.<USER_ID>',
-];
-
-setScopes([
-    'bits:read',
-    'channel:read:redemptions',
-    'channel:read:subscriptions',
-]);
-
 async function run() {
     const USER = await getUser();
     const ACCESS_TOKEN = getUserToken();
 
-    const EventSub = new WebSocket("wss://eventsub-beta.wss.twitch.tv/ws").;
-
-    const pingPongTimer = setInterval(() => {
-        EventSub.send(JSON.stringify({ type: "PING" }));
-    }, 30000);
+    const EventSub = new WebSocket(process.env.MIX_EVENTSUB_URI);
 
     EventSub.addEventListener("open", (event) => {
         console.log("CONNECTION OPEN");
@@ -34,7 +18,7 @@ async function run() {
 
     EventSub.addEventListener("close", (event) => {
         console.log("Websocket Closed");
-        clearInterval(pingPongTimer);
+        // clearInterval(pingPongTimer);
     });
 
     EventSub.addEventListener("message", (event) => {
@@ -51,30 +35,31 @@ async function run() {
         switch (message.metadata.message_type) {
             case 'session_welcome':
                 localStorage.setItem('eventsub_session_id', message.payload.session.id)
-                fetch('https://api.twitch.tv/helix/eventsub/subscriptions', {
+                fetch(`${process.env.MIX_API_URI}/eventsub/subscriptions`, {
                     method: 'POST',
                     headers: {
                         Authorization: `Bearer ${ACCESS_TOKEN}`,
                         "Client-ID": process.env.MIX_CLIENT_ID,
                         'Content-Type': 'application/json',
                     },
-                    body: {
-                        type: "channel.follow",
+                    body: JSON.stringify({
+                        type: "channel.raid",
                         version: "1",
                         condition: {
-                            broadcaster_user_id: USER.id,
+                            to_broadcaster_user_id: USER.id,
                         },
                         transport: {
                             method: "websocket",
                             session_id: localStorage.getItem('eventsub_session_id'),
                         },
-                    }
+                    }),
                 })
                 break;
+            case 'session_keepalive':
+                break;
             case 'session_reconnect':
-                EventSub.close();
-                clearInterval(pingPongTimer);
                 console.groupEnd();
+                EventSub.close();
                 run();
                 return;
             case 'notification':
@@ -92,6 +77,9 @@ async function run() {
 
         console.groupEnd();
         return;
+    });
+    EventSub.addEventListener('ping', (event) => {
+        console.log('PINGED');
     });
 }
 

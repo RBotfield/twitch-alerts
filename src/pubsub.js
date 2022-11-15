@@ -15,7 +15,7 @@ setScopes([
 async function run() {
     const USER = await getUser();
 
-    const PubSub = new WebSocket("wss://pubsub-edge.twitch.tv");
+    const PubSub = new WebSocket(process.env.MIX_PUBSUB_URI);
 
     const pingPongTimer = setInterval(() => {
         PubSub.send(JSON.stringify({ type: "PING" }));

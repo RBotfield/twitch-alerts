@@ -1,6 +1,6 @@
 let mix = require('laravel-mix');
 
-mix.js('src/*.js', 'dist/')
+mix.js('src/app.js', 'dist/')
   .extract(['alpinejs', 'twitch-js'])
   .postCss(`src/app.css`, 'dist/app.css', [require('tailwindcss')])
   .sourceMaps();
