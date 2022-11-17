@@ -1,10 +1,10 @@
-import { getUserToken, setScopes, getUser } from "./auth";
+import { getUserToken, getUser } from "./auth";
 
-async function run() {
+async function run(eventsubUrl) {
     const USER = await getUser();
-    const ACCESS_TOKEN = getUserToken();
+    const ACCESS_TOKEN = await getUserToken();
 
-    const EventSub = new WebSocket(process.env.MIX_EVENTSUB_URI);
+    const EventSub = new WebSocket(eventsubUrl || process.env.MIX_EVENTSUB_URI);
 
     EventSub.addEventListener("open", (event) => {
         console.log("CONNECTION OPEN");
@@ -18,7 +18,6 @@ async function run() {
 
     EventSub.addEventListener("close", (event) => {
         console.log("Websocket Closed");
-        // clearInterval(pingPongTimer);
     });
 
     EventSub.addEventListener("message", (event) => {
@@ -44,9 +43,11 @@ async function run() {
                     },
                     body: JSON.stringify({
                         type: "channel.raid",
+                        // type: "channel.channel_points_custom_reward_redemption.add",
                         version: "1",
                         condition: {
                             to_broadcaster_user_id: USER.id,
+                            // broadcaster_user_id: USER.id,
                         },
                         transport: {
                             method: "websocket",
@@ -58,13 +59,11 @@ async function run() {
             case 'session_keepalive':
                 break;
             case 'session_reconnect':
-                console.groupEnd();
-                EventSub.close();
-                run();
-                return;
+                run(message.payload.session.reconnect_url);
+                break;
             case 'notification':
                 const event = new CustomEvent(message.metadata.subscription_type, {
-                    detail: JSON.parse(message.payload),
+                    detail: message.payload,
                 });
                 window.dispatchEvent(event);
 

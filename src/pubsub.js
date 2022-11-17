@@ -1,4 +1,4 @@
-import { getUserToken, setScopes, getUser } from "./auth";
+import { getUserToken, getUser } from "./auth";
 
 const TOPICS = [
     'channel-bits-events-v2.<USER_ID>',
@@ -6,15 +6,9 @@ const TOPICS = [
     'channel-subscribe-events-v1.<USER_ID>',
 ];
 
-setScopes([
-    'bits:read',
-    'channel:read:redemptions',
-    'channel:read:subscriptions',
-]);
-
 async function run() {
     const USER = await getUser();
-
+    const ACCESS_TOKEN = await getUserToken();
     const PubSub = new WebSocket(process.env.MIX_PUBSUB_URI);
 
     const pingPongTimer = setInterval(() => {
@@ -29,8 +23,11 @@ async function run() {
         PubSub.addEventListener('message', (event) => {
             const message = JSON.parse(event.data);
             if (message.type === 'RESPONSE' && message.nonce === nonce) {
-                console.log('LISTENING TO:\n' + TOPICS.join('\n'));
-                return true;
+                if (!message.error) {
+                    console.log('LISTENING TO:\n' + TOPICS.join('\n'));
+                    return true;
+                }
+                return false;
             }
         });
 
@@ -40,7 +37,7 @@ async function run() {
                 nonce: nonce,
                 data: {
                     topics: TOPICS.map(value => value.replace('<USER_ID>', USER.id)),
-                    auth_token: getUserToken(),
+                    auth_token: ACCESS_TOKEN,
                 },
             })
         );

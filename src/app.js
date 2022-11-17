@@ -1,5 +1,5 @@
 import Alpine from "alpinejs";
 localStorage.clear();
-// require('./pubsub');
+require('./pubsub');
 // require('./followers');
-require('./eventsub');
+// require('./eventsub');

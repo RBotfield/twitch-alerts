@@ -1,4 +1,9 @@
-let SCOPES = ['user:read:email'];
+let SCOPES = [
+    'channel:read:redemptions',
+    'channel:manage:redemptions',
+    'bits:read',
+    'channel:read:subscriptions',
+];
 let USER;
 
 export async function getUser()
@@ -52,7 +57,6 @@ export async function getUserToken()
                 + '&redirect_uri=' + window.location.href
                 + '&scope=' + SCOPES.join('+');
         } else {
-
             let token = await fetch (
                 `${process.env.MIX_AUTH_URI}/authorize`
                     + `?client_id=${process.env.MIX_CLIENT_ID}`
@@ -60,20 +64,17 @@ export async function getUserToken()
                     + '&grant_type=user_token'
                     + `&user_id=${(await getUser()).id}`
                     + '&scope=' + SCOPES.join(' ')
-                ,{method: 'POST'}
+                , {method: 'POST'}
             )
             .then(response => response.json())
             .then(body => body.access_token);
             localStorage.setItem('USER_ACCESS_TOKEN', token);
         }
     }
-    console.log(`USER_ACCESS_TOKEN: ${localStorage.getItem('USER_ACCESS_TOKEN')}`);
+    if (process.env.MIX_ENVIRONMENT !== 'production') {
+        console.log(`USER_ACCESS_TOKEN: ${localStorage.getItem('USER_ACCESS_TOKEN')}`);
+    }
     return localStorage.getItem('USER_ACCESS_TOKEN');
-}
-
-export function setScopes(scopes)
-{
-    return SCOPES = scopes;
 }
 
 export async function getAppToken()
